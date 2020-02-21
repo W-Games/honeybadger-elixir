@@ -66,6 +66,13 @@ defmodule Honeybadger.Client do
     end
   end
 
+  def send_notice(:drop_notice) do
+    # Allow the caller to have certain messages dropped
+    # by returning :drop_notice from a notice filter.
+    Logger.debug("[Honeybadger] Not sending message to Honeybadger because :drop_notice was returned by a NoticeFilter")
+    :not_sent
+  end
+
   @doc """
   Check whether reporting is enabled for the current environment.
 

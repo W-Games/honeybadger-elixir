@@ -40,7 +40,13 @@ defmodule Honeybadger.Logger do
         notify(reason, full_context, [])
 
       _ ->
-        :ok
+        if Keyword.get(Application.get_all_env(:honeybadger) || [], :include_non_otp_errors) do
+            # This is not an OTP crash, but the config has enabled alerting on standard Logger.error messages.
+            notify(message)
+        else
+            # This is not an OTP crash and we haven't enabled alerting of standard Logger.error messages.
+            :ok
+        end
     end
 
     {:ok, state}
@@ -67,7 +73,14 @@ defmodule Honeybadger.Logger do
 
   ## Helpers
 
+  defp notify(message) when is_binary(message) do
+    # If the config has non-crash Logger.error logs enabled,
+    # We have only the message but no breadcrumbs etc.
+    Honeybadger.notify(message)
+  end
+
   defp notify(reason, metadata, stacktrace) do
+    # This is an OTP crash error with stacktrace and other metadata.
     breadcrumbs =
       Map.get(metadata, Collector.metadata_key(), Collector.breadcrumbs())
       |> Collector.put(Breadcrumb.from_error(reason))
